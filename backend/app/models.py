@@ -15,6 +15,11 @@ engine = create_async_engine(url)
 session = async_sessionmaker(bind=engine, class_=AsyncSession)
 
 
+async def create_database():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+
 async def get_session() -> AsyncSession:
     async with session(expire_on_commit=False) as s:
         yield s

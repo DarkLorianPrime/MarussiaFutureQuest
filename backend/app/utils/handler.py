@@ -1,7 +1,7 @@
-from typing import Iterable
+from typing import Iterable, Callable, Coroutine
 
 from utils.config import commands, states
-from utils.models import Parameters
+from utils.pydantic import Parameters
 from utils.responses import Response
 from utils.states import StateField, global_state
 
@@ -22,14 +22,14 @@ def message_handler(commands_list: Iterable = None, state: StateField = None):
     return decorator
 
 
-async def handle(params: Parameters):
-    command = params.body.request.command.lower()
+async def handle(params: Parameters) -> Response:
+    command: str = params.body.request.command.lower()
     for key_command, item in commands.items():
         for key in key_command:
             if key == command:
                 return await item(params)
 
-    state = states.get(global_state[params.body.session.user_id]["next_state"])
+    state: Callable[[Parameters], Coroutine] = states.get(global_state[params.body.session.user_id]["next_state"])
     if not state:
         return Response(params, text="Команда не распознана.")
 

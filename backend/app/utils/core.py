@@ -1,3 +1,5 @@
+from typing import Callable, Type
+
 from fastapi import FastAPI, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware import Middleware
@@ -6,11 +8,13 @@ from os import getenv
 
 from starlette.requests import Request
 
-from models import get_session
+from models import get_session, create_database
 from service import Service
-from utils.models import Body, Parameters
+from utils.pydantic import Body, Parameters
+from utils.states import State
 
 __app = FastAPI(
+    on_startup=[create_database],
     middleware=[Middleware(CORSMiddleware,
                            allow_credentials=True,
                            allow_methods=["*"],
@@ -19,14 +23,13 @@ __app = FastAPI(
                 ])
 
 
-def listener(state_class=None):
-
-    def decorator(fn=None):
+def listener(state_class: Type[State] = None) -> Callable:
+    def decorator(fn: Callable = None):
         @__app.post(f'/{getenv("URL", "webhook")}')
         async def wrapper(request: Request,
                           session: AsyncSession = Depends(get_session),
                           service: Service = Depends(Service)):
-            body = Body(**await request.json())
+            body: Body = Body(**await request.json())
             params = {"body": body,
                       "session": session,
                       "state": None,
@@ -34,7 +37,7 @@ def listener(state_class=None):
                       "user": await service.get_user(body.session.user_id)}
 
             if state_class:
-                params["state"] = state_class(body.session.user_id)
+                params["state"]: State = state_class(body.session.user_id)
 
             return await fn(Parameters(**params))
 

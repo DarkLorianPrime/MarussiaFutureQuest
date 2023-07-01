@@ -1,11 +1,11 @@
 from state import QuestStateList
 from utils.responses import Response
 from utils.handler import message_handler
-from utils.models import Parameters
+from utils.pydantic import Parameters
 
 
 @message_handler(commands_list=["вопрос"])
-async def add_question(params: Parameters):
+async def start_adding_question(params: Parameters):
     params.state.wait_state(QuestStateList.title)
     return Response(params,
                     text="Сообщи название своего вопроса",
@@ -13,7 +13,7 @@ async def add_question(params: Parameters):
 
 
 @message_handler(state=QuestStateList.title)
-async def set_title(params: Parameters):
+async def set_question_title(params: Parameters):
     params.state.title = params.body.request.command
     params.state.wait_state(QuestStateList.text)
     return Response(params,
@@ -22,7 +22,7 @@ async def set_title(params: Parameters):
 
 
 @message_handler(state=QuestStateList.text)
-async def set_text(params: Parameters):
+async def set_question_text(params: Parameters):
     params.state.text = params.body.request.command
     params.state.wait_state(QuestStateList.tts)
     return Response(params,
@@ -31,7 +31,7 @@ async def set_text(params: Parameters):
 
 
 @message_handler(state=QuestStateList.tts)
-async def set_tts(params: Parameters):
+async def set_question_tts(params: Parameters):
     params.state.tts = params.body.request.command
     params.state.wait_state(QuestStateList.points)
     return Response(params,
@@ -40,7 +40,7 @@ async def set_tts(params: Parameters):
 
 
 @message_handler(state=QuestStateList.points)
-async def set_points(params: Parameters):
+async def set_question_points(params: Parameters) -> Response:
     points_text = params.body.request.nlu.tokens[0]
     if not points_text.isdigit():
         return Response(params,
@@ -55,7 +55,7 @@ async def set_points(params: Parameters):
 
 
 @message_handler(state=QuestStateList.answer)
-async def set_tts(params: Parameters):
+async def set_question_answer(params: Parameters) -> Response:
     params.state.answer = params.body.request.command
     params.state.wait_state(QuestStateList.required)
     return Response(params,
@@ -64,10 +64,11 @@ async def set_tts(params: Parameters):
 
 
 @message_handler(state=QuestStateList.required)
-async def set_tts(params: Parameters):
-    answer_text = params.body.request.nlu.tokens[0].lower()
+async def set_question_required(params: Parameters) -> Response:
+    answer_text: str = params.body.request.nlu.tokens[0].lower()
     if answer_text not in ["да", "нет"]:
         return Response(params, text="Ответ должен быть: да или нет.")
+
     params.state.required = answer_text == "да"
     params.state.wait_state(QuestStateList.required)
     params.state.stop_state()
