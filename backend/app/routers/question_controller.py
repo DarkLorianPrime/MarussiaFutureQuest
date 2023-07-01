@@ -1,5 +1,5 @@
 from utils.handler import message_handler
-from utils.models import Parameters
+from utils.pydantic import Parameters
 from utils.responses import Response
 
 win_sound = "<speaker audio=marusia-sounds/game-win-2>"
@@ -47,13 +47,13 @@ async def answer_question(params: Parameters, question):
 
     if next_question:
         text = f"Вопрос категории: {next_question.title}\n{next_question.text}"
-        tts = next_question.tts
+        tts: str = next_question.tts
 
         await params.service.set_question_user(params.user, next_question)
 
         return Response(params, tts=tts, text=text)
 
-    max_points = await params.service.get_required_points()
+    max_points: int = await params.service.get_required_points()
 
     if max_points > params.user.points:
         text = f"{win_lose}К сожалению, вы не набрали минимальное количество баллов в тесте. Сбросить результат: сброс"
