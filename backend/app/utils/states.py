@@ -40,4 +40,4 @@ class State:
         return global_state[self.user_id]["args"]
 
     def stop_state(self) -> None:
-        del global_state[self.user_id]["next_state"]
+        global_state[self.user_id]["next_state"] = None
